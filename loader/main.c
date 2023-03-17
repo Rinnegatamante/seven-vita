@@ -1676,66 +1676,7 @@ void patch_game(void) {
 	hook_addr(so_symbol(&hrm_mod, "_Z17alBufferDebugNamejPKc"), (uintptr_t)ret0);
 }
 
-void *hrm_main(void *argv) {
-	char *args[1];
-	args[0] = DATA_PATH;
-	
-	int (* SDL_main)(int argc, char *args[]) = (void *) so_symbol(&hrm_mod, "SDL_main");
-	SDL_main(1, args);
-	
-	return NULL;
-}
-
-#define NUM_BUTTONS 6
-typedef struct {
-	int mask;
-	int x;
-	int y;
-} btn_emu;
-btn_emu btns[NUM_BUTTONS];
-
-int angle = 0;
-int __wrap_sceTouchPeek(SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
-	int num = __real_sceTouchPeek(port, pData, nBufs);
-	/*SceCtrlData pad;
-	sceCtrlPeekBufferPositive(0, &pad, 1);
-	for (int i = 0; i < NUM_BUTTONS; i++) {
-		if (pad.buttons & btns[i].mask) {
-			pData->reportNum = 1;
-			pData->report[0].x = btns[i].x * 2;
-			pData->report[0].y = btns[i].y * 2;
-			break;
-		}
-	}*/
-	return num;
-}
-
 int main(int argc, char *argv[]) {
-	// Play
-	btns[0].mask = SCE_CTRL_CROSS;
-	btns[0].x = 240;
-	btns[0].y = 502;
-	// Restart
-	btns[1].mask = SCE_CTRL_SQUARE;
-	btns[1].x = 135;
-	btns[1].y = 508;
-	// Next Move
-	btns[2].mask = SCE_CTRL_RTRIGGER;
-	btns[2].x = 304;
-	btns[2].y = 502;
-	// Prev Move
-	btns[3].mask = SCE_CTRL_LTRIGGER;
-	btns[3].x = 186;
-	btns[3].y = 502;
-	// Cancel
-	btns[4].mask = SCE_CTRL_START;
-	btns[4].x = 37;
-	btns[4].y = 515;
-	// Mute/Unmute
-	btns[5].mask = SCE_CTRL_TRIANGLE;
-	btns[5].x = 509;
-	btns[5].y = 516;
-	
 	//sceSysmoduleLoadModule(SCE_SYSMODULE_RAZOR_CAPTURE);
 	//SceUID crasher_thread = sceKernelCreateThread("crasher", crasher, 0x40, 0x1000, 0, 0, NULL);
 	//sceKernelStartThread(crasher_thread, 0, NULL);
@@ -1821,12 +1762,11 @@ int main(int argc, char *argv[]) {
 	// Disabling rearpad
 	SDL_setenv("VITA_DISABLE_TOUCH_BACK", "1", 1);
 	
-	pthread_t t;
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	pthread_attr_setstacksize(&attr, 0x800000);
-	pthread_create(&t, &attr,hrm_main, NULL);
-	pthread_join(t, NULL);
+	char *args[1];
+	args[0] = DATA_PATH;
+	
+	int (* SDL_main)(int argc, char *args[]) = (void *) so_symbol(&hrm_mod, "SDL_main");
+	SDL_main(1, args);
 	
 	return 0;
 }
