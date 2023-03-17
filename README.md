@@ -9,6 +9,13 @@ By doing so, it's basically as if we emulate a minimalist Android environment in
 
 ## Changelog
 
+### v1.1
+
+- Slightly improved levels loading times.
+- Improved rendering logic. Now rendering is faster.
+- Solved a bug potentially causing sporadic GPU crashes.
+- Slightly reduced memory usage and CPU workload.
+
 ### v1.0
 
 - Initial release.
