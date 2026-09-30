@@ -7,6 +7,7 @@
  * of the MIT license.	See the LICENSE file for details.
  */
 
+#define _GNU_SOURCE
 #include <vitasdk.h>
 #include <kubridge.h>
 #include <vitashark.h>
@@ -32,7 +33,6 @@
 #include <wchar.h>
 #include <wctype.h>
 
-#define _GNU_SOURCE
 #include <math.h>
 #include <math_neon.h>
 
@@ -192,7 +192,7 @@ int pthread_mutexattr_settype_fake(pthread_mutexattr_t **m, int type) {
 	return 0;
 }
 
-int pthread_mutex_init_fake(pthread_mutex_t **uid, const pthread_mutexattr_t **mutexattr) {
+int pthread_mutex_init_fake(pthread_mutex_t **uid, pthread_mutexattr_t *const *mutexattr) {
 	pthread_mutex_t *m = calloc(1, sizeof(pthread_mutex_t));
 	if (!m)
 		return -1;
@@ -213,13 +213,13 @@ int pthread_mutex_trylock_fake(pthread_mutex_t **uid) {
 	if (!*uid) {
 		ret = pthread_mutex_init_fake(uid, NULL);
 	} else if ((uintptr_t)*uid == 0x4000) {
-		pthread_mutexattr_t attr;
+		pthread_mutexattr_t *attr;
 		pthread_mutexattr_init_fake(&attr);
 		pthread_mutexattr_settype_fake(&attr, PTHREAD_MUTEX_RECURSIVE);
 		ret = pthread_mutex_init_fake(uid, &attr);
 		pthread_mutexattr_destroy_fake(&attr);
 	} else if ((uintptr_t)*uid == 0x8000) {
-		pthread_mutexattr_t attr;
+		pthread_mutexattr_t *attr;
 		pthread_mutexattr_init_fake(&attr);
 		pthread_mutexattr_settype_fake(&attr, PTHREAD_MUTEX_ERRORCHECK);
 		ret = pthread_mutex_init_fake(uid, &attr);
@@ -244,13 +244,13 @@ int pthread_mutex_lock_fake(pthread_mutex_t **uid) {
 	if (!*uid) {
 		ret = pthread_mutex_init_fake(uid, NULL);
 	} else if ((uintptr_t)*uid == 0x4000) {
-		pthread_mutexattr_t attr;
+		pthread_mutexattr_t *attr;
 		pthread_mutexattr_init_fake(&attr);
 		pthread_mutexattr_settype_fake(&attr, PTHREAD_MUTEX_RECURSIVE);
 		ret = pthread_mutex_init_fake(uid, &attr);
 		pthread_mutexattr_destroy_fake(&attr);
 	} else if ((uintptr_t)*uid == 0x8000) {
-		pthread_mutexattr_t attr;
+		pthread_mutexattr_t *attr;
 		pthread_mutexattr_init_fake(&attr);
 		pthread_mutexattr_settype_fake(&attr, PTHREAD_MUTEX_ERRORCHECK);
 		ret = pthread_mutex_init_fake(uid, &attr);
@@ -266,13 +266,13 @@ int pthread_mutex_unlock_fake(pthread_mutex_t **uid) {
 	if (!*uid) {
 		ret = pthread_mutex_init_fake(uid, NULL);
 	} else if ((uintptr_t)*uid == 0x4000) {
-		pthread_mutexattr_t attr;
+		pthread_mutexattr_t *attr;
 		pthread_mutexattr_init_fake(&attr);
 		pthread_mutexattr_settype_fake(&attr, PTHREAD_MUTEX_RECURSIVE);
 		ret = pthread_mutex_init_fake(uid, &attr);
 		pthread_mutexattr_destroy_fake(&attr);
 	} else if ((uintptr_t)*uid == 0x8000) {
-		pthread_mutexattr_t attr;
+		pthread_mutexattr_t *attr;
 		pthread_mutexattr_init_fake(&attr);
 		pthread_mutexattr_settype_fake(&attr, PTHREAD_MUTEX_ERRORCHECK);
 		ret = pthread_mutex_init_fake(uid, &attr);
@@ -441,7 +441,7 @@ int fstat_hook(int fd, void *statbuf) {
 extern void *__cxa_guard_acquire;
 extern void *__cxa_guard_release;
 
-char *basename(char *path) {
+char *basename_hook(char *path) {
 	char *p = path;
 	if (strlen(path) == 1)
 		return path;
@@ -534,7 +534,7 @@ typedef struct {
 
 int __errno_hook() {
 	printf("errno called\n");
-	return __errno;
+	return (intptr_t)__errno;
 }
 
 int closedir_fake(android_DIR *dirp) {
@@ -946,7 +946,7 @@ static so_default_dynlib default_dynlib[] = {
 	{ "atoi", (uintptr_t)&atoi },
 	{ "atol", (uintptr_t)&atol },
 	{ "atoll", (uintptr_t)&atoll },
-	{ "basename", (uintptr_t)&basename },
+	{ "basename", (uintptr_t)&basename_hook },
 	// { "bind", (uintptr_t)&bind },
 	{ "bsearch", (uintptr_t)&bsearch },
 	{ "btowc", (uintptr_t)&btowc },
@@ -1524,12 +1524,12 @@ int ogl_LoadFunctions() {
 }
 
 void patch_game(void) {
-	hook_addr(so_symbol(&hrm_mod, "_Z23GetCurrentPlatformClassv"), GetCurrentPlatformClass);
-	hook_addr(so_symbol(&hrm_mod, "_Z28android_adjustThreadAffinityv"), ret0);
-	hook_addr(so_symbol(&hrm_mod, "_Z21SDL2SetContextVersioni"), SetContextVersion);
-	hook_addr(so_symbol(&hrm_mod, "_Z23GetSlowTrulyRandomValuev"), GetSlowTrulyRandomValue);
-	hook_addr(so_symbol(&hrm_mod, "_Z22PfmGetSystemLanguageIdv"), PfmGetSystemLanguageId);
-	ogl_hook = hook_addr(so_symbol(&hrm_mod, "ogl_LoadFunctions"), ogl_LoadFunctions);
+	hook_addr(so_symbol(&hrm_mod, "_Z23GetCurrentPlatformClassv"), (uintptr_t)GetCurrentPlatformClass);
+	hook_addr(so_symbol(&hrm_mod, "_Z28android_adjustThreadAffinityv"), (uintptr_t)ret0);
+	hook_addr(so_symbol(&hrm_mod, "_Z21SDL2SetContextVersioni"), (uintptr_t)SetContextVersion);
+	hook_addr(so_symbol(&hrm_mod, "_Z23GetSlowTrulyRandomValuev"), (uintptr_t)GetSlowTrulyRandomValue);
+	hook_addr(so_symbol(&hrm_mod, "_Z22PfmGetSystemLanguageIdv"), (uintptr_t)PfmGetSystemLanguageId);
+	ogl_hook = hook_addr(so_symbol(&hrm_mod, "ogl_LoadFunctions"), (uintptr_t)ogl_LoadFunctions);
 	
 	// openAL
 	hook_addr(so_symbol(&hrm_mod, "alAuxiliaryEffectSlotf"), (uintptr_t)alAuxiliaryEffectSlotf);
