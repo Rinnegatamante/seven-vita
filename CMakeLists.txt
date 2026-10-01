@@ -10,6 +10,11 @@ endif()
 
 project(billion C CXX)
 include("${VITASDK}/share/vita.cmake" REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SDL2_mixer REQUIRED IMPORTED_TARGET SDL2_mixer)
+pkg_check_modules(SDL2_image REQUIRED IMPORTED_TARGET SDL2_image)
+pkg_check_modules(sndfile REQUIRED IMPORTED_TARGET sndfile)
+pkg_check_modules(vorbisfile REQUIRED IMPORTED_TARGET vorbisfile)
 set(VITA_APP_NAME "7 Billion Humans")
 set(VITA_TITLEID  "7BILLION7")
 set(VITA_MKSFOEX_FLAGS "-d ATTRIBUTE2=12")
@@ -25,8 +30,14 @@ add_executable(billion
   loader/ctype_patch.c
 )
 
+set_target_properties(billion PROPERTIES LINKER_LANGUAGE CXX)
+
 target_link_libraries(billion
   -Wl,--whole-archive pthread -Wl,--no-whole-archive
+  PkgConfig::SDL2_mixer
+  PkgConfig::SDL2_image
+  PkgConfig::sndfile
+  PkgConfig::vorbisfile
   SDL2_mixer
   SDL2_image
   SDL2
@@ -37,7 +48,7 @@ target_link_libraries(billion
   z
   m
   stdc++
-  opensles
+  OpenSLES
   sndfile
   vorbis
   vorbisenc
@@ -62,7 +73,6 @@ target_link_libraries(billion
   SceDisplay_stub
   SceFios2_stub
   SceGxm_stub
-  SceLibcBridge_stub
   SceAvPlayer_stub
   SceShaccCg_stub
   SceSysmodule_stub
@@ -72,7 +82,7 @@ target_link_libraries(billion
   SceMotion_stub
   SceHid_stub
   SceVshBridge_stub
-  SceKernelDmacmgr_stub
+  SceKernelDmacMgr_stub
 )
 
 vita_create_self(eboot.bin billion UNSAFE)
@@ -85,3 +95,5 @@ vita_create_vpk(billion.vpk ${VITA_TITLEID} eboot.bin
        ${CMAKE_SOURCE_DIR}/livearea/pic0.png sce_sys/pic0.png
        ${CMAKE_SOURCE_DIR}/livearea/template.xml sce_sys/livearea/contents/template.xml
 )
+
+set_property(SOURCE loader/so_util.c APPEND PROPERTY COMPILE_OPTIONS -Wno-error=return-mismatch -Wno-error=incompatible-pointer-types)
